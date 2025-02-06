@@ -64,6 +64,9 @@ contract DiceGame {
         payable(owner).transfer(amount);
     }
 
+    // ✅ Permet au contrat de recevoir directement des BNB
+    receive() external payable {}
+
     modifier onlyOwner() {
         require(
             msg.sender == owner,
