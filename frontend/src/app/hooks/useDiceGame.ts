@@ -7,28 +7,25 @@ export function useDiceGame() {
     const { data: walletClient } = useWalletClient();
 
     const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string;
-    const rpcUrl = process.env.NEXT_PUBLIC_BSC_TESTNET_RPC || "https://bsc-testnet.publicnode.com"; // Sécurisation RPC
 
     async function getContract() {
         if (!walletClient) return null;
-        const provider = new ethers.JsonRpcProvider(rpcUrl);
-        const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
         return new ethers.Contract(contractAddress, DiceGameABI.abi, signer);
     }
 
-    // Fonction pour lancer les dés
     async function rollDice(chosenNumber: number, betAmount: string) {
         if (!isConnected || !walletClient) {
             alert("Connecte-toi d'abord !");
-            return;
+            return { rolledNumber: null, payout: "0" };
         }
 
         try {
             const contract = await getContract();
-            if (!contract) return;
+            if (!contract) return { rolledNumber: null, payout: "0" };
 
             const formattedBetAmount = betAmount.replace(",", ".");
-
             console.log("💰 Valeur envoyée :", formattedBetAmount);
 
             const tx = await contract.rollDice(chosenNumber, {
@@ -40,43 +37,30 @@ export function useDiceGame() {
             await tx.wait();
             console.log("✅ Transaction confirmée !");
 
-            // 🔥 Attendre l'événement `BetResult` une seule fois pour éviter les erreurs de RPC
             const receipt = await tx.wait();
-            const logs = receipt.logs.filter(log => log.address.toLowerCase() === contractAddress.toLowerCase());
+            const logs = receipt.logs.filter((log: { address: string; }) => log.address.toLowerCase() === contractAddress.toLowerCase());
 
             if (logs.length > 0) {
                 const iface = new ethers.Interface(DiceGameABI.abi);
-                logs.forEach((log) => {
+                for (const log of logs) {
                     try {
                         const parsedLog = iface.parseLog(log);
-                        if (parsedLog.name === "BetResult") {
+                        if (parsedLog && parsedLog.name === "BetResult") {
                             const rolledNumber = parsedLog.args[1];
-                            const payout = parsedLog.args[2];
-                            console.log(`🎲 Numéro lancé: ${rolledNumber}`);
-                            console.log(`💰 Gain: ${ethers.formatEther(payout)} BNB`);
-
-                            if (payout > 0) {
-                                alert(`🎉 Félicitations ! Le dé a fait ${rolledNumber}, tu gagnes ${ethers.formatEther(payout)} BNB !`);
-                            } else {
-                                alert(`😢 Dommage, le dé a fait ${rolledNumber}. Réessaie ta chance !`);
-                            }
+                            const payout = ethers.formatEther(parsedLog.args[2]);
+                            return { rolledNumber, payout };
                         }
                     } catch (err) {
                         console.error("❌ Erreur de parsing de l'événement :", err);
                     }
-                });
+                }
             }
 
+            return { rolledNumber: 0, payout: "0" };
         } catch (error: any) {
             console.error("❌ Erreur lors du pari :", error);
-
-            if (error.reason) {
-                alert(`Erreur Solidity: ${error.reason}`);
-            } else if (error.data) {
-                alert(`Erreur brut: ${JSON.stringify(error.data)}`);
-            } else {
-                alert("Une erreur inconnue s'est produite.");
-            }
+            alert("Une erreur s'est produite !");
+            return { rolledNumber: 0, payout: "0" };
         }
     }
 

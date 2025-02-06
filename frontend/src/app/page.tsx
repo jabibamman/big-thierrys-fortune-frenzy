@@ -65,7 +65,7 @@ export default function Home() {
           href="https://esgi.fr"
           target="_blank"
           rel="noopener noreferrer">
-          Créé avec ❤️ par la meilleure équipe de l'ESGI
+          Créé avec le ❤️ par la meilleure équipe de l'ESGI
         </a>
       </footer>
     </div>
