@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAccount } from "wagmi";
 import { useDiceGame } from "../hooks/useDiceGame";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function GamePage() {
   const { rollDice, isConnected } = useDiceGame();
@@ -16,6 +17,7 @@ export default function GamePage() {
     payout: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleRollDice() {
     if (!betAmount || Number(betAmount) < minBetAmount) {
@@ -114,9 +116,16 @@ export default function GamePage() {
             )}
           </>
         ) : (
-          <p className="text-red-500 text-lg text-center">
-            Connecte ton wallet pour jouer !
-          </p>
+          <div className="mb-4 text-lg text-center">
+            <p className="text-red-500 text-lg text-center mb-4">
+              Connecte ton wallet pour jouer !
+            </p>
+            <button
+              className="px-6 py-3 text-lg font-bold rounded-lg bg-green-500 text-white hover:bg-green-600 transition-transform transform hover:scale-105"
+              onClick={() => router.push("/connect")}>
+              Se connecter
+            </button>
+          </div>
         )}
       </div>
     </div>
