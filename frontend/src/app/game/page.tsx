@@ -6,6 +6,44 @@ import { useDiceGame } from "../hooks/useDiceGame";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, useTexture } from "@react-three/drei";
+import { animated, useSpring } from "@react-spring/three";
+
+type DiceProps = {
+  readonly targetRotation: [number, number, number];
+  readonly onAnimationComplete?: () => void;
+};
+
+function Dice({ targetRotation, onAnimationComplete }: DiceProps) {
+  const texture1 = useTexture("/dice-1.png");
+  const texture2 = useTexture("/dice-2.png");
+  const texture3 = useTexture("/dice-3.png");
+  const texture4 = useTexture("/dice-4.png");
+  const texture5 = useTexture("/dice-5.png");
+  const texture6 = useTexture("/dice-6.png");
+
+  const { rotation } = useSpring({
+    rotation: targetRotation,
+    config: { tension: 180, friction: 12 },
+    onRest: () => {
+      if (onAnimationComplete) onAnimationComplete();
+    },
+  });
+
+  return (
+    <animated.mesh rotation={rotation as any}>
+      <boxGeometry args={[2, 2, 2]} />
+      <meshStandardMaterial attach="material-0" map={texture1} />
+      <meshStandardMaterial attach="material-1" map={texture2} />
+      <meshStandardMaterial attach="material-2" map={texture3} />
+      <meshStandardMaterial attach="material-3" map={texture4} />
+      <meshStandardMaterial attach="material-4" map={texture5} />
+      <meshStandardMaterial attach="material-5" map={texture6} />
+    </animated.mesh>
+  );
+}
+
 export default function GamePage() {
   const { rollDice, isConnected } = useDiceGame();
   const { address } = useAccount();
